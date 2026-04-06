@@ -1,109 +1,108 @@
 # TradingBot Pro
 
-Bot de trading autonome multi-exchange et multi-stratégie.
+Bot de trading algorithmique autonome multi-exchange et multi-stratégie, développé en Python.
+
+![Python](https://img.shields.io/badge/Python-3.10+-blue?style=flat-square)
+![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)
+![Status](https://img.shields.io/badge/Status-Active-brightgreen?style=flat-square)
+![Exchange](https://img.shields.io/badge/Exchange-Binance%20%7C%20Kraken%20%7C%20100%2B-orange?style=flat-square)
+
+## Fonctionnalités
+
+- **Multi-exchange** — compatible avec 100+ exchanges via `ccxt` (Binance, Kraken, Coinbase...)
+- **3 stratégies** — Trend Following (EMA), Mean Reversion (Bollinger+RSI), Momentum (MACD)
+- **Détection de régime** — sélection automatique de la meilleure stratégie selon le marché
+- **Risk management dynamique** — Kelly Criterion, stop-loss automatique, circuit-breaker sur drawdown
+- **Mode dry run** — simulation complète sans argent réel
+- **Alertes** — webhook Slack/Discord/Telegram en temps réel
 
 ## Architecture
 
 ```
 trading_bot/
-├── main.py                        # Point d'entrée
+├── main.py                    # Point d'entrée
 ├── config/
-│   └── settings.py                # Chargement et validation de la config
+│   └── settings.py            # Configuration YAML
 ├── core/
-│   ├── bot_engine.py              # Orchestrateur principal
-│   ├── exchange_manager.py        # Connexion aux exchanges (via ccxt)
-│   └── regime_detector.py        # Détection du régime de marché
+│   ├── bot_engine.py          # Orchestrateur principal
+│   ├── exchange_manager.py    # Connexion exchanges (ccxt)
+│   └── regime_detector.py    # Détection du régime de marché
 ├── strategies/
-│   ├── base_strategy.py           # Classe abstraite
-│   ├── trend_following.py         # EMA crossover + ADX
-│   ├── mean_reversion.py          # Bollinger Bands + RSI
-│   ├── momentum.py                # MACD + volume surge
-│   └── registry.py                # Registre des stratégies
+│   ├── trend_following.py     # EMA crossover + ADX
+│   ├── mean_reversion.py      # Bollinger Bands + RSI
+│   └── momentum.py            # MACD + volume surge
 ├── risk/
-│   └── risk_manager.py            # Gestion du risque (le module le plus important)
+│   └── risk_manager.py        # Gestion du risque
 └── monitoring/
-    └── monitor.py                 # Alertes, métriques, historique
+    └── monitor.py             # Alertes et métriques
 ```
 
-## Comment les problèmes classiques sont résolus
+## Problèmes classiques résolus
 
-| Problème | Solution implémentée |
+| Problème | Solution |
 |---|---|
-| Mauvais paramétrage → pertes | RiskManager : stop-loss automatique, circuit breaker sur drawdown max, R/R minimum 1.5:1 |
-| Stratégie qui devient obsolète | RegimeDetector : détecte automatiquement le régime (trend/ranging/volatile) et sélectionne la meilleure stratégie |
-| Surveillance régulière | Monitor : alertes webhook (Slack/Discord/Telegram), logs rotatifs, résumé de performance automatique |
-| APIs qui changent | ccxt : une seule lib qui unifie 100+ exchanges. Changer d'exchange = une ligne dans config.yaml |
+| Mauvais paramétrage → pertes | Stop-loss automatique + circuit-breaker drawdown max |
+| Stratégie obsolète | Détection automatique du régime de marché |
+| Surveillance manuelle | Alertes webhook + logs rotatifs automatiques |
+| APIs qui changent | `ccxt` unifie 100+ exchanges, 1 ligne pour changer |
 
 ## Installation
 
 ```bash
+git clone https://github.com/AMA972/trading-bot-ali-pro.git
+cd trading-bot-ali-pro
 pip install -r requirements.txt
+cp config/config.example.yaml config/config.yaml
 ```
 
 ## Configuration
 
-```bash
-# Copier l'exemple de config (généré au premier démarrage)
-cp config/config.example.yaml config/config.yaml
+```yaml
+# config/config.yaml
+dry_run: true  # Toujours commencer en simulation
 
-# Renseigner vos clés API (via variables d'environnement, recommandé)
+exchanges:
+  - id: binance
+    api_key_env: BINANCE_API_KEY
+    api_secret_env: BINANCE_API_SECRET
+    sandbox: true
+
+symbols:
+  - BTC/USDT
+  - ETH/USDT
+  - SOL/USDT
+
+risk:
+  max_drawdown_pct: 10.0
+  stop_loss_pct: 2.0
+  take_profit_pct: 4.0
+  position_sizing: kelly
+```
+
+## Lancement
+
+```bash
+# Simulation (aucun argent réel)
+python main.py
+
+# Variables d'environnement
 export BINANCE_API_KEY="votre_clé"
 export BINANCE_API_SECRET="votre_secret"
 ```
 
-## Démarrage
+## Stack technique
 
-```bash
-# Mode dry run (simulation, aucun argent réel)
-python main.py
+- **Python 3.10+** — langage principal
+- **ccxt** — abstraction multi-exchange
+- **pandas / numpy** — calcul des indicateurs techniques
+- **aiohttp** — requêtes asynchrones
+- **asyncio** — architecture non-bloquante
+- **PyYAML** — configuration
 
-# Pour passer en réel : dans config.yaml, mettre dry_run: false
-# ATTENTION : assurez-vous d'avoir testé longuement en sandbox d'abord
-```
+## Avertissement
 
-## Paramètres de risque importants (config.yaml)
+Le trading comporte des risques de perte en capital. Ce bot est un outil éducatif et expérimental. Ne tradez jamais plus que ce que vous pouvez vous permettre de perdre. Commencez toujours en mode `dry_run: true`.
 
-```yaml
-risk:
-  max_portfolio_risk_pct: 1.0   # Max 1% du capital en risque simultané
-  max_single_trade_risk_pct: 0.5 # Max 0.5% par trade
-  max_drawdown_pct: 10.0         # Le bot se met en pause si -10% de drawdown
-  stop_loss_pct: 2.0             # Stop-loss à 2% de l'entrée
-  take_profit_pct: 4.0           # Take-profit à 4% (R/R = 2:1)
-  position_sizing: kelly         # Kelly Criterion pour sizing dynamique
-```
+## Auteur
 
-## Ajouter une nouvelle stratégie
-
-1. Créer `strategies/ma_strategie.py` héritant de `BaseStrategy`
-2. Implémenter `generate_signal(ohlcv) -> Signal`
-3. L'enregistrer dans `strategies/registry.py`
-4. L'ajouter dans `config.yaml` → `strategy.active_strategies`
-
-## Ajouter un exchange
-
-Il suffit d'ajouter dans `config.yaml` :
-```yaml
-exchanges:
-  - id: kraken   # N'importe quel exchange supporté par ccxt
-    api_key_env: KRAKEN_API_KEY
-    api_secret_env: KRAKEN_API_SECRET
-    sandbox: true
-```
-
-## Alertes
-
-Configurez un webhook dans `config.yaml` :
-```yaml
-monitoring:
-  alert_webhook: "https://hooks.slack.com/services/..."
-  # Fonctionne aussi avec Discord et Telegram
-```
-
-## ⚠️ Avertissement
-
-Le trading comporte des risques de perte en capital.
-- Commencez TOUJOURS en `dry_run: true`
-- Testez en sandbox avant tout argent réel
-- Ne tradez jamais plus que ce que vous pouvez vous permettre de perdre
-- Ce bot est un outil, pas une garantie de profit
+**Ali ADOUM MAHAMAT** — [GitHub](https://github.com/AMA972)
